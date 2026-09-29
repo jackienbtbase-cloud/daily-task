@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NBT Daily Task Dashboard</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f4f5f7; margin: 0; padding: 20px; color: #172b4d; transition: background 0.3s, color 0.3s; }
+        .container { max-width: 1300px; margin: 0 auto; }
+        h2 { margin-bottom: 15px; color: #172b4d; display: flex; justify-content: space-between; align-items: center; }
+        
+        /* 顶部右侧工具栏（深色模式切换） */
+        .header-actions { display: flex; gap: 10px; align-items: center; }
+        .theme-toggle-btn { background: #fff; border: 1px solid #dfe1e6; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+
+        /* 发泄计数器横幅样式 */
+        .rage-banner { background: linear-gradient(135deg, #ffebe6, #fff0b3); border: 1px solid #ffbdad; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .rage-info { font-size: 15px; font-weight: 600; color: #de350b; }
+        .rage-count-num { font-size: 22px; font-weight: bold; color: #bf2600; padding: 0 4px; }
+        .rage-btn { background: #de350b; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; box-shadow: 0 2px 4px rgba(222,53,11,0.3); transition: transform 0.1s ease; }
+        .rage-btn:active { transform: scale(0.92); background: #bf2600; }
+
+        /* 控制栏 */
+        .control-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
+        .filter-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+        .tab-btn { background: #fff; border: 1px solid #dfe1e6; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .tab-btn:hover { background: #ebecf0; }
+        .tab-btn.active { background: #0747a6; color: white; border-color: #0747a6; }
+
+        .btn-primary { background: #0052cc; color: white; border: none; padding: 9px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .btn-primary:hover { background: #0043b5; }
+
+        /* 表格样式 */
+        .table-container { background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow-x: auto; margin-bottom: 30px; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+        th, td { padding: 12px 16px; border-bottom: 1px solid #dfe1e6; vertical-align: middle; }
+        th { background: #f4f5f7; color: #5e6c84; font-weight: 600; position: sticky; top: 0; z-index: 10; }
+        tr:hover { background: #fafbfc; }
+
+        /* 标签样式 */
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; display: inline-block; }
+        .badge-daily { background: #deebff; color: #0747a6; }
+        .badge-weekly { background: #e3fcef; color: #006644; }
+        .badge-monthly { background: #fff0b3; color: #ff8b00; }
+        .badge-now { background: #ffebe6; color: #de350b; }
+
+        /* 链接样式 */
+        .task-link { color: #0052cc; text-decoration: none; font-weight: 500; }
+        .task-link:hover { text-decoration: underline; }
+
+        /* 操作按钮 */
+        .action-btn { padding: 5px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid #dfe1e6; background: #fff; margin-right: 4px; transition: all 0.2s; }
+        .btn-done { background: #e3fcef; color: #006644; border-color: #abf5d1; }
+        .btn-done:hover { background: #abf5d1; }
+        .btn-pin { background: #fff0b3; color: #ff8b00; border-color: #ffe380; }
+        .btn-edit { background: #f4f5f7; color: #42526e; }
+        .btn-delete { background: #ffebe6; color: #de350b; border-color: #ffbdad; }
+
+        /* 便签备忘录样式 */
+        .memo-container { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-top: 20px; }
+        .memo-container h3 { margin-top: 0; font-size: 15px; color: #172b4d; margin-bottom: 10px; }
+        .memo-container textarea { width: 100%; height: 120px; padding: 12px; border: 1px solid #dfe1e6; border-radius: 6px; box-sizing: border-box; font-size: 13px; font-family: inherit; resize: vertical; outline: none; }
+        .memo-container textarea:focus { border-color: #0052cc; }
+
+        /* 弹窗样式 */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: #fff; padding: 25px; border-radius: 8px; width: 400px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .modal-content h3 { margin-top: 0; color: #172b4d; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 12px; font-weight: 600; color: #5e6c84; margin-bottom: 5px; }
+        .form-group input, .form-group select { width: 100%; padding: 8px 12px; border: 1px solid #dfe1e6; border-radius: 4px; box-sizing: border-box; font-size: 13px; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+
+        /* 🌙 深色模式专属样式 */
+        body.dark-mode { background-color: #121212; color: #e0e0e0; }
+        body.dark-mode h2, body.dark-mode h3 { color: #e0e0e0; }
+        body.dark-mode .table-container, body.dark-mode .memo-container, body.dark-mode .modal-content { background: #1e1e1e; border: 1px solid #333; }
+        body.dark-mode th { background: #252525; color: #9aa5b1; border-bottom-color: #333; }
+        body.dark-mode td { border-bottom-color: #333; color: #e0e0e0; }
+        body.dark-mode tr:hover { background: #222; }
+        body.dark-mode .tab-btn, body.dark-mode .action-btn, body.dark-mode .theme-toggle-btn { background: #2a2a2a; border-color: #444; color: #e0e0e0; }
+        body.dark-mode .tab-btn:hover { background: #333; }
+        body.dark-mode .tab-btn.active { background: #0052cc; color: white; }
+        body.dark-mode .search-box, body.dark-mode input, body.dark-mode select, body.dark-mode textarea { background: #2a2a2a; border-color: #444; color: #e0e0e0; }
+        body.dark-mode .rage-banner { background: linear-gradient(135deg, #3d1f1a, #3d331a); border-color: #662211; }
+        body.dark-mode .rage-info { color: #ff9980; }
+        body.dark-mode .rage-count-num { color: #ff5533; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>
+        <span>📌 My Daily Task Dashboard</span>
+        <div class="header-actions">
+            <button class="theme-toggle-btn" id="theme-toggle-btn" onclick="toggleTheme()">🌙 暗黑模式</button>
+            <button class="btn-primary" onclick="openModal()">+ Add New Task</button>
+        </div>
+    </h2>
+
+    <!-- 💥 破防发泄计数器面板 -->
+    <div class="rage-banner">
+        <div class="rage-info">
+            🔥 今日破防 / 想打人次数：<span id="rage-count" class="rage-count-num">0</span> 次 
+            <span style="font-size: 12px; opacity: 0.8; margin-left: 8px;">(受够了就狂按右边按钮发泄吧)</span>
+        </div>
+        <div>
+            <button class="rage-btn" onclick="addRage()">💥 气死我了 (+1)</button>
+            <button class="action-btn" onclick="resetRage()" style="margin-left: 8px;">归零</button>
+        </div>
+    </div>
+
+    <!-- 控制筛选栏 -->
+    <div class="control-bar">
+        <div class="filter-tabs">
+            <button class="tab-btn active" onclick="setFilter('All', this)">All</button>
+            <button class="tab-btn" onclick="setFilter('Daily', this)">Daily</button>
+            <button class="tab-btn" onclick="setFilter('Weekly', this)">Weekly</button>
+            <button class="tab-btn" onclick="setFilter('Monthly', this)">Monthly</button>
+            <button class="tab-btn" onclick="setFilter('Now', this)">Now / Urgent</button>
+            <button class="tab-btn" onclick="setFilter('Pinned', this)">⭐ Pinned</button>
+        </div>
+    </div>
+
+    <!-- 任务表格 -->
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 50px;">NO.</th>
+                    <th style="width: 100px;">Status</th>
+                    <th>Title & Link</th>
+                    <th style="width: 220px;">Last Monitored</th>
+                    <th style="width: 240px; text-align: center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="task-table-body">
+                <!-- 动态渲染 -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 📝 临时便签备忘录 -->
+    <div class="memo-container">
+        <h3>📝 Quick Memo (临时备忘录 / 随手记)</h3>
+        <textarea id="quick-memo" placeholder="在这里随手记点临时杂事、会议记录或电话号码，输入会自动实时保存..." oninput="saveMemo()"></textarea>
+    </div>
+</div>
+
+<!-- 添加/修改任务的弹窗 -->
+<div id="task-modal" class="modal">
+    <div class="modal-content">
+        <h3 id="modal-title">Add New Task</h3>
+        <input type="hidden" id="task-id">
+        <div class="form-group">
+            <label>Frequency / Status</label>
+            <select id="task-status">
+                <option value="Daily">Daily</option>
+                <option value="Weekly">Weekly</option>
+                <option value="Monthly">Monthly</option>
+                <option value="Now">Now</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Task Title</label>
+            <input type="text" id="task-title" placeholder="Enter task description...">
+        </div>
+        <div class="form-group">
+            <label>Link URL (Optional)</label>
+            <input type="text" id="task-link" placeholder="https://...">
+        </div>
+        <div class="modal-actions">
+            <button class="action-btn" onclick="closeModal()">Cancel</button>
+            <button class="btn-primary" onclick="saveTask()">Save Task</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const defaultTasks = [
+        { id: 1, status: 'Daily', title: 'Monitor jira for emulsion and rhazyme', link: 'https://nbtbaseandpave.atlassian.net', pinned: true, lastDone: '-' },
+        { id: 2, status: 'Daily', title: 'Monitor the logistics app', link: 'https://nbt-lorrylink.netlify.app/', pinned: false, lastDone: '-' },
+        { id: 3, status: 'Daily', title: 'Produce weekly report for NBT-M', link: 'https://nbt-marketing-dashboard.netlify.app/', pinned: false, lastDone: '-' },
+        { id: 4, status: 'Daily', title: 'Monitor NBT Marketing jira', link: 'https://nbt-marketing.atlassian.net/jira/software/projects/KAN/boards/2', pinned: false, lastDone: '-' },
+        { id: 5, status: 'Weekly', title: 'NBT PDD Procurement Tracker and Purchase', link: 'https://docs.google.com/spreadsheets/d/1CCP0KsYZyX_NUpErj0hZacrlq0n7uP9Ye8xGQI4T-wU/edit?usp=sharing', pinned: false, lastDone: '-' },
+        { id: 6, status: 'Daily', title: 'Google Order Form Response', link: 'https://docs.google.com/forms/d/14oNgOOe-v9h86XsPVn8eumIuSyZXcv008_Hfd-2GPT-I/edit#responses', pinned: false, lastDone: '-' },
+        { id: 7, status: 'Daily', title: 'Google Sheet Order Response', link: 'https://docs.google.com/spreadsheets/d/1EV8Oiw9zpCv5piVLFlmUEZfmN0cNraOaOGyDC_7R5o/edit', pinned: false, lastDone: '-' },
+        { id: 8, status: 'Daily', title: 'PNL SOA Dashboard (admin@nbt.com/ilovenbt)', link: 'https://pnl-soa-dashboard.netlify.app/', pinned: false, lastDone: '-' },
+        { id: 9, status: 'Daily', title: 'Bitumen Daily Price', link: 'https://onedrive.live.com/', pinned: false, lastDone: '-' },
+        { id: 10, status: 'Now', title: 'Find out any security risk in all publish code and repos.', link: '', pinned: true, lastDone: '-' },
+        { id: 11, status: 'Daily', title: 'NBT System Link', link: 'https://nbt-home.netlify.app/', pinned: false, lastDone: '-' }
+    ];
+
+    let tasks = JSON.parse(localStorage.getItem('nbt_daily_tasks')) || defaultTasks;
+    let currentFilter = 'All';
+    let rageCount = parseInt(localStorage.getItem('nbt_rage_count')) || 0;
+
+    // 🌙 深色模式初始化与切换
+    let isDarkMode = localStorage.getItem('nbt_dark_mode') === 'true';
+    if (isDarkMode) {
+        document.body.classList.add('dark-mode');
+        document.getElementById('theme-toggle-btn').innerText = '☀️ 极简亮色';
+    }
+
+    function toggleTheme() {
+        isDarkMode = !isDarkMode;
+        document.body.classList.toggle('dark-mode', isDarkMode);
+        localStorage.setItem('nbt_dark_mode', isDarkMode);
+        document.getElementById('theme-toggle-btn').innerText = isDarkMode ? '☀️ 极简亮色' : '🌙 暗黑模式';
+    }
+
+    // 📝 便签备忘录实时保存
+    function saveMemo() {
+        const memoText = document.getElementById('quick-memo').value;
+        localStorage.setItem('nbt_quick_memo', memoText);
+    }
+
+    // 初始化加载便签内容
+    document.getElementById('quick-memo').value = localStorage.getItem('nbt_quick_memo') || '';
+
+    function saveToStorage() {
+        localStorage.setItem('nbt_daily_tasks', JSON.stringify(tasks));
+        renderTasks();
+    }
+
+    // 💥 发泄计数器逻辑
+    function addRage() {
+        rageCount++;
+        localStorage.setItem('nbt_rage_count', rageCount);
+        document.getElementById('rage-count').innerText = rageCount;
+    }
+
+    function resetRage() {
+        if (confirm('心情平复了吗？确定要清空今天的破防次数吗？')) {
+            rageCount = 0;
+            localStorage.setItem('nbt_rage_count', rageCount);
+            document.getElementById('rage-count').innerText = rageCount;
+        }
+    }
+
+    function setFilter(filter, btn) {
+        currentFilter = filter;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderTasks();
+    }
+
+    function renderTasks() {
+        const tbody = document.getElementById('task-table-body');
+        
+        let filtered = tasks.filter(t => {
+            if (currentFilter === 'All') return true;
+            if (currentFilter === 'Pinned') return t.pinned;
+            return t.status === currentFilter;
+        });
+
+        filtered.sort((a, b) => (b.pinned === true) - (a.pinned === true));
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #999; padding: 30px;">No tasks found.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = filtered.map((t, index) => {
+            let badgeClass = 'badge-daily';
+            if (t.status === 'Weekly') badgeClass = 'badge-weekly';
+            else if (t.status === 'Monthly') badgeClass = 'badge-monthly';
+            else if (t.status === 'Now') badgeClass = 'badge-now';
+
+            let linkHtml = t.link ? `<br><a href="${t.link}" target="_blank" class="task-link">🔗 ${t.link}</a>` : '';
+            let pinIcon = t.pinned ? '⭐ Unpin' : '📌 Pin';
+
+            return `
+                <tr>
+                    <td><strong>${index + 1}</strong></td>
+                    <td><span class="badge ${badgeClass}">${t.status}</span></td>
+                    <td>
+                        <strong>${t.pinned ? '⭐ ' : ''}${t.title}</strong>
+                        ${linkHtml}
+                    </td>
+                    <td><span style="color: #00875a; font-weight: 500;">${t.lastDone}</span></td>
+                    <td style="text-align: center;">
+                        <button class="action-btn btn-done" onclick="markDone(${t.id})">✓ Done</button>
+                        <button class="action-btn btn-pin" onclick="togglePin(${t.id})">${pinIcon}</button>
+                        <button class="action-btn btn-edit" onclick="editTask(${t.id})">✏️</button>
+                        <button class="action-btn btn-delete" onclick="deleteTask(${t.id})">🗑️</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function markDone(id) {
+        const now = new Date();
+        const timeStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        tasks = tasks.map(t => t.id === id ? { ...t, lastDone: timeStr } : t);
+        saveToStorage();
+    }
+
+    function togglePin(id) {
+        tasks = tasks.map(t => t.id === id ? { ...t, pinned: !t.pinned } : t);
+        saveToStorage();
+    }
+
+    function deleteTask(id) {
+        if (confirm('Are you sure you want to delete this task?')) {
+            tasks = tasks.filter(t => t.id !== id);
+            saveToStorage();
+        }
+    }
+
+    function openModal(id = null) {
+        document.getElementById('task-modal').style.display = 'flex';
+        if (id) {
+            document.getElementById('modal-title').innerText = 'Edit Task';
+            const t = tasks.find(item => item.id === id);
+            document.getElementById('task-id').value = t.id;
+            document.getElementById('task-status').value = t.status;
+            document.getElementById('task-title').value = t.title;
+            document.getElementById('task-link').value = t.link || '';
+        } else {
+            document.getElementById('modal-title').innerText = 'Add New Task';
+            document.getElementById('task-id').value = '';
+            document.getElementById('task-status').value = 'Daily';
+            document.getElementById('task-title').value = '';
+            document.getElementById('task-link').value = '';
+        }
+    }
+
+    function closeModal() {
+        document.getElementById('task-modal').style.display = 'none';
+    }
+
+    function editTask(id) {
+        openModal(id);
+    }
+
+    function saveTask() {
+        const id = document.getElementById('task-id').value;
+        const status = document.getElementById('task-status').value;
+        const title = document.getElementById('task-title').value.trim();
+        const link = document.getElementById('task-link').value.trim();
+
+        if (!title) {
+            alert('Please enter a task title!');
+            return;
+        }
+
+        if (id) {
+            tasks = tasks.map(t => t.id == id ? { ...t, status, title, link } : t);
+        } else {
+            const newTask = {
+                id: Date.now(),
+                status,
+                title,
+                link,
+                pinned: false,
+                lastDone: '-'
+            };
+            tasks.push(newTask);
+        }
+
+        closeModal();
+        saveToStorage();
+    }
+
+    document.getElementById('rage-count').innerText = rageCount;
+    renderTasks();
+</script>
+
+</body>
+</html>
